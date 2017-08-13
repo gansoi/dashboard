@@ -42,12 +42,19 @@ func init() {
 }
 
 func main() {
-	t := &github.UnauthenticatedRateLimitedTransport{
-		// https://github.com/settings/applications
-		ClientID:     clientID,
-		ClientSecret: clientSecret,
+	var client *github.Client
+
+	if clientID != "" && clientSecret != "" {
+		t := &github.UnauthenticatedRateLimitedTransport{
+			// https://github.com/settings/applications
+			ClientID:     clientID,
+			ClientSecret: clientSecret,
+		}
+
+		client = github.NewClient(t.Client())
+	} else {
+		client = github.NewClient(nil)
 	}
-	client := github.NewClient(t.Client())
 
 	pullRequestOptions := &github.PullRequestListOptions{
 		State: "all",
