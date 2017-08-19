@@ -61,16 +61,18 @@ func main() {
 	}
 	pullRequests, _, _ := client.PullRequests.List(context.Background(), org, repo, pullRequestOptions)
 	for _, pr := range pullRequests {
+		add := 0
 		if pr.CreatedAt.After(epoch) {
-			kpis["score"]++
-			kpis["pullRequests"]++
+			add = 1
 			kpis["pullRequestsCreated"]++
 		}
+
 		if pr.ClosedAt != nil && pr.ClosedAt.After(epoch) {
-			kpis["score"]++
-			kpis["pullRequests"]++
+			add = 1
 			kpis["pullRequestsClosed"]++
 		}
+
+		kpis["pullRequests"] += add
 	}
 
 	issuesOptions := &github.IssueListByRepoOptions{
@@ -78,16 +80,18 @@ func main() {
 	}
 	issues, _, _ := client.Issues.ListByRepo(context.Background(), org, repo, issuesOptions)
 	for _, i := range issues {
+		add := 0
 		if i.CreatedAt.After(epoch) {
-			kpis["score"]++
-			kpis["issues"]++
+			add = 1
 			kpis["issuesCreated"]++
 		}
 		if i.ClosedAt != nil && i.ClosedAt.After(epoch) {
-			kpis["score"]++
-			kpis["issues"]++
+			add = 1
 			kpis["issuesClosed"]++
 		}
+
+		kpis["issues"] += add
+		kpis["score"] += add
 	}
 
 	commitsOptions := &github.CommitsListOptions{
@@ -98,6 +102,11 @@ func main() {
 
 	kpis["commits"] = len(commits)
 	kpis["score"] += len(commits)
+
+	// pull requests is included in the issue-count. Subtract.
+	kpis["issues"] -= kpis["pullRequests"]
+	kpis["issuesCreated"] -= kpis["pullRequestsCreated"]
+	kpis["issuesClosed"] -= kpis["pullRequestsClosed"]
 
 	kpis["elapsed"] = int(time.Now().Sub(epoch) / time.Second)
 
